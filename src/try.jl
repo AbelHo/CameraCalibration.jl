@@ -4,12 +4,12 @@ using OpenCV, CxxWrap
 cv = OpenCV
 
 # config=[4,5] for aspod small portable checkboard, [6,9] for big checkerboard in Hong Kong; [column, row] of intersecting points
-function cal_imgsfol(fol, config=[4,5]; createResultFolder=false)
+function cal_imgsfol(fol, config=[4,5]; createResultFolder=false, res_postfix="_res_"*replace( string(config), '['=>'(', ']'=>')', ','=>'.' ) )
     corners_list = []
     fname_list = []
 
     config = cv.Size(Int32(config[1]),Int32(config[2]))
-    createResultFolder && (isdir(fol*"_res")  || mkdir(fol*"_res") )
+    createResultFolder && (isdir(fol*res_postfix)  || mkdir(fol*res_postfix) )
 
     img_cum = [] # accumulate drawing of detected checkerboard points
     for (root, dirs, files) in walkdir(fol)
@@ -28,18 +28,20 @@ function cal_imgsfol(fol, config=[4,5]; createResultFolder=false)
 
             if createResultFolder && ret
                 img_new = cv.drawChessboardCorners(img, config, corners, ret)
-                cv.imwrite(joinpath(root*"_res", file), img_new)
+                cv.imwrite(joinpath(root*res_postfix, file), img_new)
                 push!(corners_list, corners[:,1,:])
                 push!(fname_list, joinpath(root,file))
                 img_cum =  cv.drawChessboardCorners(img_cum, config, corners, ret)
             end
         end
     end
-    createResultFolder && cv.imwrite(fol*"_res__summary.png", img_cum)
+    createResultFolder && cv.imwrite(fol*res_postfix*"__summary.png", img_cum)
     return fname_list, corners_list
 end
 
 # f,c_2 = cal_imgsfol("/Users/abel/Documents/data_res/aspod/aspod2_20220513_nuspool", [4,5]; createResultFolder=true)
+# f,c = cal_imgsfol("/Users/abel/Documents/data_res/calf/HK_camcalib", [6,9]; createResultFolder=true)
+# /Users/abel/Documents/data/calf/Calibration/Checkerboard_Calibration/20191128/20191128_14.40.35_log.mkv
 
 
 # fpath = "/Users/abel/Documents/data_res/aspod/2022.03.04/cam_calib/image-000024.png"
