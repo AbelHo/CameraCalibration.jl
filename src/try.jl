@@ -46,12 +46,14 @@ function cal_imgsVideo(vidfname, config=[4,5]; resImageFilepath=false, res_postf
     config = cv.Size(Int32(config[1]),Int32(config[2]))
     @info "counting total frames..."
     # totalframe = counttotalframes(vid)
+    totalframe = missing
     try
-        totalframe = readchomp(`ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1  $vidfname`)
+        totalframe = readchomp(`ffprobe -v error -select_streams v:0 -count_packets -show_entries stream=nb_read_packets -of csv=p=0 $vidfname`)
+        @info "Total Frame: $totalframe"
         totalframe = parse(Int, totalframe)
     catch err
         totalframe = missing
-        @info "[ERR]unable to get total number of frame"
+        @error "[ERR]unable to get total number of frame"
     end
     corners_list = []; frame_list = []
     counts=1
@@ -73,7 +75,7 @@ function cal_imgsVideo(vidfname, config=[4,5]; resImageFilepath=false, res_postf
             push!(corners_list, corners_jl[:,1,:])
             push!(frame_list, counts)
         end
-        @debug(string(counts) * "/" * string(totalframe) *"\t"* string(ret) )
+        @debug(string(counts) * "/" * string(totalframe) )#*"\t"* string(ret) )
         counts += 1
     end
 
