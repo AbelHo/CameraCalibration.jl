@@ -40,10 +40,17 @@ function cal_imgsfol(fol, config=[4,5]; createResultFolder=false, res_postfix="_
 end
 
 using VideoIO, Images, ImageDraw
-function cal_imgsVideo(vidfname, config=[4,5]; resImageFilepath=false, res_postfix="_res_"*replace( string(config), '['=>'(', ']'=>')', ','=>'.' ) )
+function cal_imgsVideo(vidfname, config=[4,5];
+    resImageFilepath=false, res_postfix="_res_"*replace( string(config), '['=>'(', ']'=>')', ','=>'.' ),
+    numskipframe=0,
+    createResultFolder=false
+    )
+    
     vid = VideoIO.openvideo(vidfname) #"/Users/abel/Documents/aspod/data/2022-05-13_nus-pool/0015/Vid_20131219_101550.mkv")
 
     config = cv.Size(Int32(config[1]),Int32(config[2]))
+    dot_size = 25
+
     @info "counting total frames..."
     # totalframe = counttotalframes(vid)
     totalframe = missing
@@ -55,13 +62,33 @@ function cal_imgsVideo(vidfname, config=[4,5]; resImageFilepath=false, res_postf
         totalframe = missing
         @error "[ERR]unable to get total number of frame"
     end
+
+    fps = missing
+    try 
+        fps = split(readchomp(`ffprobe -v 0 -of compact=p=0 -select_streams 0 -show_entries stream=r_frame_rate $vidfname`), '=')[2] #`ffmpeg -i $vidfname 2>&1 | sed -n "s/.*, \(.*\) fp.*/\1/p"`)
+        try 
+            fps = parse(Float64,fps)
+        catch err
+            fps = round(reduce(/, parse.(Float64, split(fps,'/')) ), digits=3)
+        end
+        
+        @info "fps: " * string(fps)
+    catch err
+        fps = missing
+        @error "[ERR]unable to get fps"
+    end
+
     corners_list = []; frame_list = []
     counts=1
+    img = []
     while !eof(vid)
-        img = read(vid);
+        try
+            img = read(vid);
+        catch err
+            @error "cant read video"
+            break
+        end
 
-        config = cv.Size(Int32(4),Int32(5))
-        dot_size = 25
 
         img_cv = permutedims(channelview(img), (1,3,2))
         img_cv = cv.Mat{UInt8}(Any, UInt8.(round.(img_cv.*255)) )
@@ -75,8 +102,19 @@ function cal_imgsVideo(vidfname, config=[4,5]; resImageFilepath=false, res_postf
             push!(corners_list, corners_jl[:,1,:])
             push!(frame_list, counts)
         end
-        @debug(string(counts) * "/" * string(totalframe) )#*"\t"* string(ret) )
-        counts += 1
+        @debug(string(counts)* "/" *string(totalframe) *" "*string(floor(Int,(counts-1)/fps))*":" * string(round(mod((counts-1),fps)/fps*60, digits=3) )*"\t"* string(ret) )
+        
+        if numskipframe==0
+            counts += 1
+        else
+            try
+                skipframes(vid, numskipframe)
+            catch err
+                @info "no more frames"
+                break
+            end
+            counts += numskipframe
+        end
     end
 
     img
@@ -88,9 +126,11 @@ function cal_imgsVideo(vidfname, config=[4,5]; resImageFilepath=false, res_postf
         end
     end
     display(img)
-    
+
     return img, corners_list
 end
+
+# save("/Users/abel/Documents/data_res/aspod/aspod2_20220513_nuspool_r-full.png", ii)
 
 @info ("fully loaded")
 
