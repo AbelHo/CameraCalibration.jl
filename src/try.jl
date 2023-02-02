@@ -59,8 +59,16 @@ function cal_imgsVideo(vidfname, config=[4,5];
         @info "Total Frame: $totalframe"
         totalframe = parse(Int, totalframe)
     catch err
-        totalframe = missing
-        @error "[ERR]unable to get total number of frame"
+        try 
+            @error "Couldn't detect fps fast, ffmmpeg not in path, revert to using julia's VideoIO to find fps(slower)"
+            totalframe = counttotalframes(vid)
+        catch err
+            totalframe = missing
+            @error "[ERR]unable to get total number of frame"
+        end
+
+        # totalframe = missing
+        # @error "[ERR]unable to get total number of frame"
     end
 
     fps = missing
@@ -102,7 +110,9 @@ function cal_imgsVideo(vidfname, config=[4,5];
             push!(corners_list, corners_jl[:,1,:])
             push!(frame_list, counts)
         end
-        @debug(string(counts)* "/" *string(totalframe) *" "*string(floor(Int,(counts-1)/fps))*":" * string(round(mod((counts-1),fps)/fps*60, digits=3) )*"\t"* string(ret) )
+        t_inS = (counts-1)/fps
+        @debug(string(counts)* "/" *string(totalframe) *" "*string(floor(Int,t_inS/60))*":" * string(round(mod(t_inS,60), digits=3) )*"\t"* string(ret) )
+        # @debug(string(counts)* "/" *string(totalframe) *" "*string(floor(Int,(counts-1)/fps))*":" * string(round(mod((counts-1),fps)/fps*60, digits=3) )*"\t"* string(ret) )
         
         if numskipframe==0
             counts += 1
@@ -116,19 +126,60 @@ function cal_imgsVideo(vidfname, config=[4,5];
             counts += numskipframe
         end
     end
+    
+    seekstart(vid)
+    img = read(vid)
+    try
+        display_corners!(img, corners_list; dot_size=dot_size)
+        display(img)
+    catch err
+        @error "[Err] Can't plot detected checkerboard points"
+    end
+    # len_cl = length(corners_list)
+    # try
+    #     for j in 1:len_cl
+    #         corner = corners_list[j]
+    #         for i in 1:size(corner,2)
+    #             draw!(img, Ellipse(CirclePointRadius(corner[1,i], corner[2,i],dot_size)), RGB{N0f8}(1,j/len_cl,0))
+    #             #@debug [corner[1,i], corner[2,i]]
+    #         end
+    #     end
+    # catch err
+    #     @error "Failed to plot detected points"
+    # end
 
-    img
-    for j in 1:length(corners_list)
+    return img, corners_list, frame_list
+end
+
+
+function display_corners!(img, corners_list; dot_size=25)
+    len_cl = length(corners_list)
+    for j in 1:len_cl
         corner = corners_list[j]
         for i in 1:size(corner,2)
-            draw!(img, Ellipse(CirclePointRadius(corner[1,i], corner[2,i],dot_size)), RGB{N0f8}(1,0,0))
+            draw!(img, Ellipse(CirclePointRadius(corner[1,i], corner[2,i],dot_size)), typeof(img[1])(1,j/len_cl,0))
             #@debug [corner[1,i], corner[2,i]]
         end
     end
-    display(img)
-
-    return img, corners_list
+    return img
 end
+
+
+
+# function display_corners!(img,corners_list; dot_size=25)
+#     for j in 1:length(corners_list)
+#         corner = corners_list[j]
+#         for i in 1:size(corner,2)
+#             @show typeof(img)
+#             @show [corner[1,i], corner[2,i]]
+#             @show typeof( Ellipse(CirclePointRadius(corner[1,i], corner[2,i],dot_size)) )
+#             @show typeof( RGB{N0f8}(1,0,0) )
+#             draw!(img, Ellipse(CirclePointRadius(corner[1,i], corner[2,i],dot_size)), RGB{N0f8}(1,0,0))
+#             #@debug [corner[1,i], corner[2,i]]
+#         end
+#     end
+#     return img
+# end
 
 # save("/Users/abel/Documents/data_res/aspod/aspod2_20220513_nuspool_r-full.png", ii)
 
