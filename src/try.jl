@@ -1,5 +1,6 @@
 using Pkg
 Pkg.activate("/Users/abel/Documents/Github/CameraCalibration.jl")
+using Printf
 using OpenCV, CxxWrap
 cv = OpenCV
 
@@ -40,6 +41,7 @@ function cal_imgsfol(fol, config=[4,5]; createResultFolder=false, res_postfix="_
 end
 
 using VideoIO, Images, ImageDraw
+# ii, cl, fl= cal_imgsVideo(fname, [4,6]; numskipframe=30)
 function cal_imgsVideo(vidfname, config=[4,5];
     resImageFilepath=false, res_postfix="_res_"*replace( string(config), '['=>'(', ']'=>')', ','=>'.' ),
     numskipframe=0,
@@ -109,6 +111,7 @@ function cal_imgsVideo(vidfname, config=[4,5];
             # end
             push!(corners_list, corners_jl[:,1,:])
             push!(frame_list, counts)
+            save(joinpath("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_res_good", "image-" *@sprintf("%08d", counts)* ".png"), img)
         end
         t_inS = (counts-1)/fps
         @debug(string(counts)* "/" *string(totalframe) *" "*string(floor(Int,t_inS/60))*":" * string(round(mod(t_inS,60), digits=3) )*"\t"* string(ret) )
@@ -164,6 +167,19 @@ function display_corners!(img, corners_list; dot_size=25)
     return img
 end
 
+function display_corners(img, corners_list; dot_size=25)
+    ii = deepcopy(img)
+    len_cl = length(corners_list)
+    for j in 1:len_cl
+        corner = corners_list[j]
+        for i in 1:size(corner,2)
+            draw!(ii, Ellipse(CirclePointRadius(corner[1,i], corner[2,i],dot_size)), typeof(img[1])(1,j/len_cl,0))
+            #@debug [corner[1,i], corner[2,i]]
+        end
+    end
+    return ii
+end
+
 
 
 # function display_corners!(img,corners_list; dot_size=25)
@@ -180,10 +196,100 @@ end
 #     end
 #     return img
 # end
+# function 
+load_fname = "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014.jld2"
+calib_params = load(load_fname)
+
+im_h, im_w = size(ii)
+grid_h = 4
+grid_w = floor(im_w / im_h * grid_h) |> Int
+
+gridW = 1:im_w/(grid_w-1):im_w+1 |> collect
+gridW[end] = gridW[end] - 1
+gridH = 1:im_h/(grid_h-1):im_h+1 |> collect
+gridH[end] = gridH[end] - 1
+
+grid = Matrix{eltype(gridH)}(undef, 2, length(gridH)*length(gridW))
+counter = 1 
+for w in gridW
+    for h in gridH
+        grid[1,counter] = w
+        grid[2,counter] = h
+        counter += 1
+    end
+end
+
+cls = calib_params["corners_list"]
+nearest_indices_list = Array{Int}(undef, length(gridH)*length(gridW))
+nearest_val_list = Array{Float64}(undef, length(gridH)*length(gridW))
+for i in 1:size(grid,2)
+    nearest_val = Inf
+    g = grid[:,i]
+    for j in 1:size(cls,1)
+        dist = mapslices( norm, cls[j] .- g; dims=1) |> minimum
+        if dist < nearest_val
+            nearest_indices_list[i] = j
+            nearest_val_list[i] = dist
+            nearest_val = dist
+        end
+    end
+end
+nearest_indices_list = unique(nearest_indices_list)
+img_new = display_corners(ii, cls[nearest_indices_list])
+
+frame_good = calib_params["file_list"][nearest_indices_list|>sort]
+
+nearest_indices_list, nearest_val_list, frame_good, img_new
+
+function vid_frame2img(vidfname, framelist, func, args=nothing)
+    vid = VideoIO.openvideo(vidfname)
+    index = 1
+    ind = 1
+    output_list = []
+    for frame_ind in framelist
+        if frame_ind == 1
+            img = read(vid)
+        else
+            # @debug frame_ind-index
+            skipframes(vid, frame_ind-index)
+            img = read(vid)
+        end
+        index = frame_ind+1
+
+        push!(output_list, func(img, ind, frame_ind, args))
+        ind += 1
+    end
+    return output_list
+end
+
+function save_img(img, ind, index, dirpath) 
+    # @debug(  joinpath(dirpath, "image-" *@sprintf("%08d", ind)* ".png") )
+    # @debug size(img)
+    isdir(dirpath) || mkdir(dirpath)
+    save(joinpath(dirpath, "image-" *@sprintf("%08d", ind)* ".png"), img)
+    return index
+end
+
 
 # save("/Users/abel/Documents/data_res/aspod/aspod2_20220513_nuspool_r-full.png", ii)
-
+ENV["JULIA_DEBUG"] = all
 @info ("fully loaded")
+
+#= USAGE
+fname = "/Users/abel/Documents/data/aspod/2023-01-20_labtank_checkerboard/Vid_20131219_105014.mkv"
+res_fol = "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2"
+ii, cl, fl= cal_imgsVideo(fname, [4,6]; numskipframe=30)
+
+save(joinpath(res_fol, split(splitext(fname)[1],'/')[end]*".jld2"), Dict(
+       "fname" => fname,
+       "corners_list" => cl,
+       "file_list" => fl
+       ) )
+save(joinpath(res_fol, split(splitext(fname)[1],'/')[end]*".jpg"), ii)
+
+calib_params = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014.jld2")
+
+=#
 
 
 # f,c_2 = cal_imgsfol("/Users/abel/Documents/data_res/aspod/aspod2_20220513_nuspool", [4,5]; createResultFolder=true)
