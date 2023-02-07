@@ -66,8 +66,8 @@ def write_undistort(dirname_filetype, newcameramtx, mtx, dist):
 def example():
     import calib_folder
     import h5py
-    camera_params = "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_101424.h5"
-    newcameramtx, roi, ret, mtx, dist, rvecs, tvecs = calib_folder.calibrate_folder("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_1fps_raw",(4,6))
+    camera_params = "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_s30.h5"
+    newcameramtx, roi, ret, mtx, dist, rvecs, tvecs = calib_folder.calibrate_folder("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_s30_raw",(4,6))
 
 
     hf = h5py.File(camera_params, 'w')
@@ -80,4 +80,4 @@ def example():
     hf.create_dataset('tvecs', data=tvecs)
     hf.close()
 
-    calib_folder.write_undistort('/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_1fps_raw/*.png', newcameramtx, mtx)
+    calib_folder.write_undistort('/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_s30_raw/*.png', newcameramtx, mtx, dist)

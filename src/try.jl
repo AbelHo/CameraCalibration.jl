@@ -313,17 +313,20 @@ function save_img(img, ind, index, dirpath)
     save(joinpath(dirpath, "image-" *@sprintf("%08d", ind)* ".png"), img)
     return index
 end
-
 function save_imgCorners!(img, ind, index, dirpath__calib_params__nearest_indices_list) 
     # @debug(  joinpath(dirpath, "image-" *@sprintf("%08d", ind)* ".png") )
     # @debug size(img)
     dirpath, calib_params, nearest_indices_list = dirpath__calib_params__nearest_indices_list
-    @info nearest_indices_list[ind]
     display_corners!(img, [calib_params["corners_list"][nearest_indices_list[ind]]] )
 
     isdir(dirpath) || mkdir(dirpath)
     save(joinpath(dirpath, "image-" *@sprintf("%08d", ind)* ".png"), img)
     return index
+end
+function save_imgCorners__save_img!(img, ind, index, dirpath__calib_params__nearest_indices_list)
+    dirpath, _, _ = dirpath__calib_params__nearest_indices_list
+    save_img(img, ind, index, dirpath*"_raw") 
+    save_imgCorners!(img, ind, index, dirpath__calib_params__nearest_indices_list)
 end
 
 
@@ -331,7 +334,7 @@ end
 ENV["JULIA_DEBUG"] = all
 @info ("fully loaded")
 
-#= USAGE
+##= USAGE
 fname = "/Users/abel/Documents/data/aspod/2023-01-20_labtank_checkerboard/Vid_20131219_105014.mkv"
 res_fol = "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2"
 ii, cl, fl= cal_imgsVideo(fname, [4,6]; numskipframe=30)
@@ -340,24 +343,27 @@ calib_params = Dict(
        "corners_list" => cl,
        "file_list" => fl
        )
+save_postfix = "_s30" # ""
 
-save(joinpath(res_fol, split(splitext(fname)[1],'/')[end]*".jld2"), Dict(
+save(joinpath(res_fol, split(splitext(fname)[1],'/')[end]*"$save_postfix.jld2"), Dict(
        "fname" => fname,
        "corners_list" => cl,
        "file_list" => fl
        ) )
-save(joinpath(res_fol, split(splitext(fname)[1],'/')[end]*".jpg"), ii)
+save(joinpath(res_fol, split(splitext(fname)[1],'/')[end]*"$save_postfix.jpg"), ii)
 
 calib_params = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014.jld2")
 
 nearest_indices_list, nearest_val_list, frame_good, img_new = select_good_corners(calib_params, fname)
-# vid_frame2img(calib_params["fname"], frame_good, save_imgCorners!, ("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_1fps", calib_params, nearest_indices_list))
-# vid_frame2img(calib_params["fname"], frame_good, save_img, "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_1fps_raw")
+vid_frame2img(calib_params["fname"], frame_good, save_imgCorners__save_img!, ("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix", calib_params, nearest_indices_list))
 
-d = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_101424.h5")
+vid_frame2img(calib_params["fname"], frame_good, save_imgCorners!, ("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix", calib_params, nearest_indices_list))
+vid_frame2img(calib_params["fname"], frame_good, save_img, "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix_raw")
+
+d = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_101424$save_postfix.h5")
 =#
-imgpoints = calib_params["corners_list"][nearest_indices_list] .|> mat_jl2mat_cv
-objpoints = deepcopy(imgpoints)
+# imgpoints = calib_params["corners_list"][nearest_indices_list] .|> mat_jl2mat_cv
+# objpoints = deepcopy(imgpoints)
 
 #=#
 i=3
