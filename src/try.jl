@@ -334,7 +334,7 @@ end
 ENV["JULIA_DEBUG"] = all
 @info ("fully loaded")
 
-##= USAGE
+#= USAGE
 fname = "/Users/abel/Documents/data/aspod/2023-01-20_labtank_checkerboard/Vid_20131219_105014.mkv"
 res_fol = "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2"
 ii, cl, fl= cal_imgsVideo(fname, [4,6]; numskipframe=30)
