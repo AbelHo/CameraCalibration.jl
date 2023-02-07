@@ -4,6 +4,15 @@ using Printf
 using OpenCV, CxxWrap
 cv = OpenCV
 
+function extend_dims(A,which_dim)
+    s = [size(A)...]
+    insert!(s,which_dim,1)
+    return reshape(A, s...)
+end
+
+mat_jl2mat_cv(x) = cv.Mat{Float32}(Any, extend_dims(x, 2) )
+mat_jl2mat_cvCxxMat(x) = cv.CxxMat{Float32}(Any, extend_dims(x, 2) )
+
 # config=[4,5] for aspod small portable checkboard, [6,9] for big checkerboard in Hong Kong; [column, row] of intersecting points
 function cal_imgsfol(fol, config=[4,5]; createResultFolder=false, res_postfix="_res_"*replace( string(config), '['=>'(', ']'=>')', ','=>'.' ) )
     corners_list = []
@@ -28,6 +37,9 @@ function cal_imgsfol(fol, config=[4,5]; createResultFolder=false, res_postfix="_
             @debug ret
 
             if createResultFolder && ret
+                corners2 = cv.cornerSubPix(gray,corners, cv.Size(Int32(11),Int32(11)), cv.Size(Int32(-1),Int32(-1)), criteria)
+                corners = corners2
+
                 img_new = cv.drawChessboardCorners(img, config, corners, ret)
                 cv.imwrite(joinpath(root*res_postfix, file), img_new)
                 push!(corners_list, corners[:,1,:])
@@ -47,7 +59,10 @@ function cal_imgsVideo(vidfname, config=[4,5];
     numskipframe=0,
     createResultFolder=false
     )
-    
+    criteria = cv.TermCriteria( Int32(cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER), Int32(30), 0.001)
+    corner_winsize = cv.Size(Int32(11),Int32(11))
+    corner_zerozone = cv.Size(Int32(-1),Int32(-1))
+
     vid = VideoIO.openvideo(vidfname) #"/Users/abel/Documents/aspod/data/2022-05-13_nus-pool/0015/Vid_20131219_101550.mkv")
 
     config = cv.Size(Int32(config[1]),Int32(config[2]))
@@ -105,13 +120,15 @@ function cal_imgsVideo(vidfname, config=[4,5];
         gray = cv.cvtColor(img_cv, cv.COLOR_BGR2GRAY);
         ret, corners = cv.findChessboardCorners(gray, config, flags=cv.CALIB_CB_EXHAUSTIVE)
         if ret
-            corners_jl = Int.(round.(corners))
+            corners = cv.cornerSubPix(gray,corners, corner_winsize, corner_zerozone, criteria)
+            # corners_jl = Int.(round.(corners))
             # for i in 1:size(corners_jl,3)
             #     draw!(img, Ellipse(CirclePointRadius(corners_jl[1,1,i], corners_jl[2,1,i],dot_size)), RGB{N0f8}(1,0,0))
             # end
-            push!(corners_list, corners_jl[:,1,:])
+            # push!(corners_list, corners_jl[:,1,:])
+            push!(corners_list, corners[:,1,:])
             push!(frame_list, counts)
-            save(joinpath("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_res_good", "image-" *@sprintf("%08d", counts)* ".png"), img)
+            # save(joinpath("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_res_good", "image-" *@sprintf("%08d", counts)* ".png"), img)
         end
         t_inS = (counts-1)/fps
         @debug(string(counts)* "/" *string(totalframe) *" "*string(floor(Int,t_inS/60))*":" * string(round(mod(t_inS,60), digits=3) )*"\t"* string(ret) )
@@ -121,7 +138,7 @@ function cal_imgsVideo(vidfname, config=[4,5];
             counts += 1
         else
             try
-                skipframes(vid, numskipframe)
+                skipframes(vid, numskipframe-1)
             catch err
                 @info "no more frames"
                 break
@@ -160,7 +177,7 @@ function display_corners!(img, corners_list; dot_size=25)
     for j in 1:len_cl
         corner = corners_list[j]
         for i in 1:size(corner,2)
-            draw!(img, Ellipse(CirclePointRadius(corner[1,i], corner[2,i],dot_size)), typeof(img[1])(1,j/len_cl,0))
+            draw!(img, Ellipse(CirclePointRadius(Int(round(corner[1,i])), Int(round(corner[2,i])), dot_size)), typeof(img[1])(1,j/len_cl,0))
             #@debug [corner[1,i], corner[2,i]]
         end
     end
@@ -173,7 +190,7 @@ function display_corners(img, corners_list; dot_size=25)
     for j in 1:len_cl
         corner = corners_list[j]
         for i in 1:size(corner,2)
-            draw!(ii, Ellipse(CirclePointRadius(corner[1,i], corner[2,i],dot_size)), typeof(img[1])(1,j/len_cl,0))
+            draw!(ii, Ellipse(CirclePointRadius(Int(round(corner[1,i])), Int(round(corner[2,i])), dot_size)), typeof(img[1])(1,j/len_cl,0))
             #@debug [corner[1,i], corner[2,i]]
         end
     end
@@ -196,50 +213,77 @@ end
 #     end
 #     return img
 # end
-# function 
-load_fname = "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014.jld2"
-calib_params = load(load_fname)
 
-im_h, im_w = size(ii)
-grid_h = 4
-grid_w = floor(im_w / im_h * grid_h) |> Int
 
-gridW = 1:im_w/(grid_w-1):im_w+1 |> collect
-gridW[end] = gridW[end] - 1
-gridH = 1:im_h/(grid_h-1):im_h+1 |> collect
-gridH[end] = gridH[end] - 1
+############################################################
+# load_fname = "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014.jld2"
+# calib_params = load(load_fname)
+# vid = VideoIO.openvideo(fname)
+# ii = read(vid)
 
-grid = Matrix{eltype(gridH)}(undef, 2, length(gridH)*length(gridW))
-counter = 1 
-for w in gridW
-    for h in gridH
-        grid[1,counter] = w
-        grid[2,counter] = h
-        counter += 1
-    end
+function select_good_corners(calib_fname::String, fname::String)
+    calib_params = load(calib_fname)
+    select_good_corners(calib_params, img::PermutedDimsArray)
 end
 
-cls = calib_params["corners_list"]
-nearest_indices_list = Array{Int}(undef, length(gridH)*length(gridW))
-nearest_val_list = Array{Float64}(undef, length(gridH)*length(gridW))
-for i in 1:size(grid,2)
-    nearest_val = Inf
-    g = grid[:,i]
-    for j in 1:size(cls,1)
-        dist = mapslices( norm, cls[j] .- g; dims=1) |> minimum
-        if dist < nearest_val
-            nearest_indices_list[i] = j
-            nearest_val_list[i] = dist
-            nearest_val = dist
+function select_good_corners(calib_params, fname::String)
+    vid = VideoIO.openvideo(fname)
+    img = read(vid)
+    select_good_corners(calib_params, img::PermutedDimsArray)
+end
+
+
+function select_good_corners(calib_params, img::PermutedDimsArray)
+    imsize = size(img)
+    nearest_indices_list, nearest_val_list, frame_good = select_good_corners(calib_params, imsize)
+    img_new = display_corners(img, calib_params["corners_list"][nearest_indices_list])
+    nearest_indices_list, nearest_val_list, frame_good, img_new
+end
+
+function select_good_corners(calib_params, imsize::Tuple)
+    im_h, im_w = imsize
+    grid_h = 4
+    grid_w = floor(im_w / im_h * grid_h) |> Int
+
+    gridW = 1:im_w/(grid_w-1):im_w+1 |> collect
+    gridW[end] = gridW[end] - 1
+    gridH = 1:im_h/(grid_h-1):im_h+1 |> collect
+    gridH[end] = gridH[end] - 1
+
+    grid = Matrix{eltype(gridH)}(undef, 2, length(gridH)*length(gridW))
+    counter = 1 
+    for w in gridW
+        for h in gridH
+            grid[1,counter] = w
+            grid[2,counter] = h
+            counter += 1
         end
     end
+
+    cls = calib_params["corners_list"]
+    nearest_indices_list = Array{Int}(undef, length(gridH)*length(gridW))
+    nearest_val_list = Array{Float64}(undef, length(gridH)*length(gridW))
+    for i in 1:size(grid,2)
+        nearest_val = Inf
+        g = grid[:,i]
+        for j in 1:size(cls,1)
+            dist = mapslices( norm, cls[j] .- g; dims=1) |> minimum
+            if dist < nearest_val
+                nearest_indices_list[i] = j
+                nearest_val_list[i] = dist
+                nearest_val = dist
+            end
+        end
+    end
+    nearest_indices_list = unique(nearest_indices_list) |> sort
+    # img_new = display_corners(ii, cls[nearest_indices_list])
+
+    frame_good = calib_params["file_list"][nearest_indices_list]
+
+    nearest_indices_list, nearest_val_list, frame_good
+
 end
-nearest_indices_list = unique(nearest_indices_list)
-img_new = display_corners(ii, cls[nearest_indices_list])
-
-frame_good = calib_params["file_list"][nearest_indices_list|>sort]
-
-nearest_indices_list, nearest_val_list, frame_good, img_new
+# #######################################################
 
 function vid_frame2img(vidfname, framelist, func, args=nothing)
     vid = VideoIO.openvideo(vidfname)
@@ -270,6 +314,18 @@ function save_img(img, ind, index, dirpath)
     return index
 end
 
+function save_imgCorners!(img, ind, index, dirpath__calib_params__nearest_indices_list) 
+    # @debug(  joinpath(dirpath, "image-" *@sprintf("%08d", ind)* ".png") )
+    # @debug size(img)
+    dirpath, calib_params, nearest_indices_list = dirpath__calib_params__nearest_indices_list
+    @info nearest_indices_list[ind]
+    display_corners!(img, [calib_params["corners_list"][nearest_indices_list[ind]]] )
+
+    isdir(dirpath) || mkdir(dirpath)
+    save(joinpath(dirpath, "image-" *@sprintf("%08d", ind)* ".png"), img)
+    return index
+end
+
 
 # save("/Users/abel/Documents/data_res/aspod/aspod2_20220513_nuspool_r-full.png", ii)
 ENV["JULIA_DEBUG"] = all
@@ -279,6 +335,11 @@ ENV["JULIA_DEBUG"] = all
 fname = "/Users/abel/Documents/data/aspod/2023-01-20_labtank_checkerboard/Vid_20131219_105014.mkv"
 res_fol = "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2"
 ii, cl, fl= cal_imgsVideo(fname, [4,6]; numskipframe=30)
+calib_params = Dict(
+       "fname" => fname,
+       "corners_list" => cl,
+       "file_list" => fl
+       )
 
 save(joinpath(res_fol, split(splitext(fname)[1],'/')[end]*".jld2"), Dict(
        "fname" => fname,
@@ -289,9 +350,22 @@ save(joinpath(res_fol, split(splitext(fname)[1],'/')[end]*".jpg"), ii)
 
 calib_params = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014.jld2")
 
+nearest_indices_list, nearest_val_list, frame_good, img_new = select_good_corners(calib_params, fname)
+# vid_frame2img(calib_params["fname"], frame_good, save_imgCorners!, ("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_1fps", calib_params, nearest_indices_list))
+# vid_frame2img(calib_params["fname"], frame_good, save_img, "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_1fps_raw")
+
+d = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_101424.h5")
 =#
+imgpoints = calib_params["corners_list"][nearest_indices_list] .|> mat_jl2mat_cv
+objpoints = deepcopy(imgpoints)
 
+#=#
+i=3
+seekstart(vid); skipframes(vid, calib_params["file_list"][i]-1); 
+ii = read(vid)
+display_corners(ii, [calib_params["corners_list"][i]] )
 
+print("done")
 # f,c_2 = cal_imgsfol("/Users/abel/Documents/data_res/aspod/aspod2_20220513_nuspool", [4,5]; createResultFolder=true)
 # f,c = cal_imgsfol("/Users/abel/Documents/data_res/calf/HK_camcalib", [6,9]; createResultFolder=true)
 # /Users/abel/Documents/data/calf/Calibration/Checkerboard_Calibration/20191128/20191128_14.40.35_log.mkv
