@@ -41,7 +41,7 @@ def calibrate_folder(dirname, config=(4,6), plotImage=False):
     img = cv.imread(images[0])
     h,  w = img.shape[:2]
     newcameramtx, roi = cv.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
-    return newcameramtx, roi, ret, mtx, dist, rvecs, tvecs
+    return newcameramtx, roi, ret, mtx, dist, rvecs, tvecs, (w,h)
 
 
 def write_undistort(dirname_filetype, newcameramtx, mtx, dist):
@@ -63,11 +63,11 @@ def write_undistort(dirname_filetype, newcameramtx, mtx, dist):
 
         cv.imwrite(fname[:-4]+'_undistort'+fname[-4:], dst)
 
-def example():
+def example(plot=False):
     import calib_folder
     import h5py
     camera_params = "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_s30.h5"
-    newcameramtx, roi, ret, mtx, dist, rvecs, tvecs = calib_folder.calibrate_folder("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_s30_raw",(4,6))
+    newcameramtx, roi, ret, mtx, dist, rvecs, tvecs, imsize = calib_folder.calibrate_folder("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_s30_raw",(4,6))
 
 
     hf = h5py.File(camera_params, 'w')
@@ -78,6 +78,9 @@ def example():
     hf.create_dataset('dist', data=dist)
     hf.create_dataset('rvecs', data=rvecs)
     hf.create_dataset('tvecs', data=tvecs)
+    hf.create_dataset('imsize', data=imsize)
     hf.close()
 
-    calib_folder.write_undistort('/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_s30_raw/*.png', newcameramtx, mtx, dist)
+    if plot:
+        calib_folder.write_undistort('/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_s30_raw/*.png', newcameramtx, mtx, dist)
+    return newcameramtx, roi, ret, mtx, dist, rvecs, tvecs, imsize
