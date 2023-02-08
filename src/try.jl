@@ -3,6 +3,7 @@ Pkg.activate("/Users/abel/Documents/Github/CameraCalibration.jl")
 using Printf
 using OpenCV, CxxWrap
 cv = OpenCV
+using JLD2
 
 function extend_dims(A,which_dim)
     s = [size(A)...]
@@ -357,21 +358,21 @@ calib_params = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_2
 nearest_indices_list, nearest_val_list, frame_good, img_new = select_good_corners(calib_params, fname)
 vid_frame2img(calib_params["fname"], frame_good, save_imgCorners__save_img!, ("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix", calib_params, nearest_indices_list))
 
-vid_frame2img(calib_params["fname"], frame_good, save_imgCorners!, ("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix", calib_params, nearest_indices_list))
-vid_frame2img(calib_params["fname"], frame_good, save_img, "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix_raw")
+#vid_frame2img(calib_params["fname"], frame_good, save_imgCorners!, ("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix", calib_params, nearest_indices_list))
+#vid_frame2img(calib_params["fname"], frame_good, save_img, "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix_raw")
 
-d = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_101424$save_postfix.h5")
+d = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_s30.h5")
 =#
 # imgpoints = calib_params["corners_list"][nearest_indices_list] .|> mat_jl2mat_cv
 # objpoints = deepcopy(imgpoints)
 
-#=#
-i=3
-seekstart(vid); skipframes(vid, calib_params["file_list"][i]-1); 
-ii = read(vid)
-display_corners(ii, [calib_params["corners_list"][i]] )
 
-print("done")
+#~ show one frame result
+# i=3
+# seekstart(vid); skipframes(vid, calib_params["file_list"][i]-1); 
+# ii = read(vid)
+# display_corners(ii, [calib_params["corners_list"][i]] )
+
 # f,c_2 = cal_imgsfol("/Users/abel/Documents/data_res/aspod/aspod2_20220513_nuspool", [4,5]; createResultFolder=true)
 # f,c = cal_imgsfol("/Users/abel/Documents/data_res/calf/HK_camcalib", [6,9]; createResultFolder=true)
 # /Users/abel/Documents/data/calf/Calibration/Checkerboard_Calibration/20191128/20191128_14.40.35_log.mkv
