@@ -3,3 +3,4 @@ python/opencv/bin
 python/opencv/lib
 python/opencv/pyvenv.cfg
 *.pyc
+Manifest.toml

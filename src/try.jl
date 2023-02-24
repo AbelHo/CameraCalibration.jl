@@ -356,7 +356,7 @@ save(joinpath(res_fol, split(splitext(fname)[1],'/')[end]*"$save_postfix.jpg"), 
 calib_params = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014.jld2")
 
 nearest_indices_list, nearest_val_list, frame_good, img_new = select_good_corners(calib_params, fname)
-vid_frame2img(calib_params["fname"], frame_good, save_imgCorners__save_img!, ("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix", calib_params, nearest_indices_list))
+vid_frame2img(calib_params["fname"], frame_good, save_imgCorners__save_img!, (joinpath(res_fol,splitext(basename(fname))[1]*save_postfix), calib_params, nearest_indices_list))
 
 #vid_frame2img(calib_params["fname"], frame_good, save_imgCorners!, ("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix", calib_params, nearest_indices_list))
 #vid_frame2img(calib_params["fname"], frame_good, save_img, "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix_raw")
