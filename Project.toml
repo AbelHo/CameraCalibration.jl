@@ -1,7 +1,7 @@
 name = "CameraCalibration"
 uuid = "db0a59c4-22ff-4b87-95fd-6a720160b258"
 authors = ["Abel Ho"]
-version = "0.1.0"
+version = "0.0.1"
 
 [deps]
 CxxWrap = "1f15a43c-97ca-5a2a-ae31-89f07a497df4"
