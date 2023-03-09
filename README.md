@@ -17,7 +17,11 @@ Pkg.add(url="https://github.com/AbelHo/CameraCalibration.jl")
 ## Usage
 1. Create directory called ```CameraCalibration``` on your desktop
 1. Put all the videos you want to analyse in that director
-1. This command will automatically search for that folder and process all the videos in it
+2. Load CameraCalibration library to initialize
+```
+using CameraCalibration
+```
+4. This command will automatically search for that folder and process all the videos in it
 ```
 calibrate_video_checkerboard()
 ```
