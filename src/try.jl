@@ -5,7 +5,7 @@ using OpenCV, CxxWrap
 cv = OpenCV
 using JLD2
 
-export cal_imgsfol, cal_imgsVideo
+export cal_imgsfol, cal_imgsVideo, calibrate_video_checkerboard
 
 function extend_dims(A,which_dim)
     s = [size(A)...]
@@ -69,7 +69,7 @@ function cal_imgsVideo(vidfname, config=[4,5];
     vid = VideoIO.openvideo(vidfname) #"/Users/abel/Documents/aspod/data/2022-05-13_nus-pool/0015/Vid_20131219_101550.mkv")
 
     config = cv.Size(Int32(config[1]),Int32(config[2]))
-    dot_size = 25
+    # dot_size = 25
 
     @info "counting total frames..."
     # totalframe = counttotalframes(vid)
@@ -153,7 +153,7 @@ function cal_imgsVideo(vidfname, config=[4,5];
     seekstart(vid)
     img = read(vid)
     try
-        display_corners!(img, corners_list; dot_size=dot_size)
+        display_corners!(img, corners_list)#; dot_size=dot_size)
         display(img)
     catch err
         @error "[Err] Can't plot detected checkerboard points"
@@ -175,7 +175,7 @@ function cal_imgsVideo(vidfname, config=[4,5];
 end
 
 
-function display_corners!(img, corners_list; dot_size=25)
+function display_corners!(img, corners_list; dot_size=reduce(*,size(img))/300_000 )
     len_cl = length(corners_list)
     for j in 1:len_cl
         corner = corners_list[j]
@@ -187,7 +187,7 @@ function display_corners!(img, corners_list; dot_size=25)
     return img
 end
 
-function display_corners(img, corners_list; dot_size=25)
+function display_corners(img, corners_list; dot_size=reduce(*,size(img))/300_000)
     ii = deepcopy(img)
     len_cl = length(corners_list)
     for j in 1:len_cl
@@ -332,9 +332,58 @@ function save_imgCorners__save_img!(img, ind, index, dirpath__calib_params__near
     save_imgCorners!(img, ind, index, dirpath__calib_params__nearest_indices_list)
 end
 
+skiphiddenfiles(list) = filter(!startswith('.') ∘  basename, list)
+
+function find_vid(folname; vidtype=r".mkv|.MP4|.avi|.mp4")
+    flist = readdir(folname; join=true) |> skiphiddenfiles
+    filter( x -> occursin(vidtype, x), flist)
+end
+
+
+function calibrate_video_checkerboard(config=[4,6], fname=joinpath(Base.homedir(),"Desktop","CameraCalibration"), res_fol=joinpath(Base.homedir(),"Desktop","CameraCalibration"); 
+                                        numskipframe=nothing, save_postfix = "_s$numskipframe" )
+    # fname = "/Users/abel/Documents/data/aspod/2023-01-20_labtank_checkerboard/Vid_20131219_105014.mkv"
+    # res_fol = "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2"
+    !isdir(res_fol) && mkpath(res_fol)
+    if isdir(fname)
+        flist = find_vid(fname)
+        return calibrate_video_checkerboard.(Ref(config), flist, Ref(res_fol); numskipframe=numskipframe, save_postfix=save_postfix)
+    end
+    if isnothing(numskipframe) 
+        numskipframe=round(Int,VideoIO.get_fps(fname))
+    end
+
+    ii, cl, fl= cal_imgsVideo(fname, config; numskipframe=numskipframe)
+    calib_params = Dict(
+        "fname" => fname,
+        "corners_list" => cl,
+        "file_list" => fl
+        )
+    # save_postfix = "_s$numskipframe" # ""
+
+    save(joinpath(res_fol, split(splitext(fname)[1],'/')[end]*"$save_postfix.jld2"), Dict(
+        "fname" => fname,
+        "corners_list" => cl,
+        "file_list" => fl
+        ) )
+    save(joinpath(res_fol, split(splitext(fname)[1],'/')[end]*"$save_postfix.jpg"), ii)
+
+    # calib_params = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014.jld2")
+
+    nearest_indices_list, nearest_val_list, frame_good, img_new = select_good_corners(calib_params, fname)
+    vid_frame2img(calib_params["fname"], frame_good, save_imgCorners__save_img!, (joinpath(res_fol,splitext(basename(fname))[1]*save_postfix), calib_params, nearest_indices_list))
+
+    #vid_frame2img(calib_params["fname"], frame_good, save_imgCorners!, ("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix", calib_params, nearest_indices_list))
+    #vid_frame2img(calib_params["fname"], frame_good, save_img, "/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix_raw")
+
+    # d = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_s30.h5")
+    println("Results output are saved in: $res_fol")
+    return ii
+end
+
 
 # save("/Users/abel/Documents/data_res/aspod/aspod2_20220513_nuspool_r-full.png", ii)
-ENV["JULIA_DEBUG"] = all
+# ENV["JULIA_DEBUG"] = all
 @info ("fully loaded")
 
 #= USAGE
