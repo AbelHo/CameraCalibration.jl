@@ -1,8 +1,10 @@
 # Create Checkerboard Calibration Video
 1. Prepare checker board  
 ![example checkboard](example_results/Vid_20131219_105014_small_180p_s10_raw/image-00000002.png)
-1. move the checkerboard to cover the entire video field of view, move it over all pixels
-1. The entire checkerboard intersection points need to be in the image frame to be counted as a proper detection
+1. Checkerboard squares must be of equal size, measure the distance between each square
+1. Ensure that the checkboard is perfectly flat throughout the process. A solid backing is required if it's a printed paper, so that it doesn't bend when it is being moved around.
+1. Move the checkerboard to cover the entire video field of view, move it over all pixels
+1. All the checkerboard intersection points need to be in the image frame to be counted as a proper detection.
 1. Focus on covering all the corners and side which are more difficult
 <p float="left">
   <img src="example_results/Vid_20131219_105014_small_180p_s10_raw/image-00000010.png" width="100" />
