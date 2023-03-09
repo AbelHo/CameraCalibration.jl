@@ -374,14 +374,15 @@ function calibrate_video_checkerboard(config=[4,6], fname=joinpath(Base.homedir(
     !isdir(res_fol) && mkpath(res_fol)
     if isdir(fname)
         flist = find_vid(fname)
-        return calibrate_video_checkerboard.(Ref(config), flist, Ref(res_fol); numskipframe=numskipframe, save_postfix=save_postfix)
+        return calibrate_video_checkerboard.(Ref(config), flist, Ref(res_fol); numskipframe=numskipframe, save_postfix=save_postfix);
     end
     if isnothing(numskipframe) 
         numskipframe=round(Int,get_fps(fname))
         save_postfix = "_s$numskipframe"
     end
 
-    ii, cl, fl= cal_imgsVideo(fname, config; numskipframe=numskipframe)
+    @info "Processing file: $fname..."
+    ii, cl, fl= cal_imgsVideo(fname, config; numskipframe=numskipframe);
     calib_params = Dict(
         "fname" => fname,
         "corners_list" => cl,
