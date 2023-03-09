@@ -4,6 +4,7 @@ using Printf
 using OpenCV, CxxWrap
 cv = OpenCV
 using JLD2
+using VideoIO, Images, ImageDraw
 
 export cal_imgsfol, cal_imgsVideo, calibrate_video_checkerboard
 
@@ -12,6 +13,31 @@ function extend_dims(A,which_dim)
     insert!(s,which_dim,1)
     return reshape(A, s...)
 end
+
+## Extra
+function get_fps(file::AbstractString, streamno::Integer = 0)
+    streamno >= 0 || throw(ArgumentError("streamno must be non-negative"))
+    fps_strs = VideoIO.FFMPEG.exe(
+        `-v 0 -of compact=p=0 -select_streams v:0 -show_entries stream=r_frame_rate $file`,
+        command = VideoIO.FFMPEG.ffprobe,
+        collect = true,
+    )
+	@debug fps_strs
+	try
+		fps = split(fps_strs[1], '=')[2]
+		if occursin("No such file or directory", fps)
+			error("Could not find file $file")
+		elseif occursin("N/A", fps)
+			return nothing
+		end
+		return reduce(//, parse.(Int, split(fps,'/')) )
+		# return round(reduce(/, parse.(Float64, split(fps,'/')) ), digits=3)
+	catch err
+		@debug(err)
+		return NaN
+	end
+end
+#####
 
 mat_jl2mat_cv(x) = cv.Mat{Float32}(Any, extend_dims(x, 2) )
 mat_jl2mat_cvCxxMat(x) = cv.CxxMat{Float32}(Any, extend_dims(x, 2) )
@@ -55,7 +81,7 @@ function cal_imgsfol(fol, config=[4,5]; createResultFolder=false, res_postfix="_
     return fname_list, corners_list
 end
 
-using VideoIO, Images, ImageDraw
+# using VideoIO, Images, ImageDraw
 # ii, cl, fl= cal_imgsVideo(fname, [4,6]; numskipframe=30)
 function cal_imgsVideo(vidfname, config=[4,5];
     resImageFilepath=false, res_postfix="_res_"*replace( string(config), '['=>'(', ']'=>')', ','=>'.' ),
@@ -350,7 +376,7 @@ function calibrate_video_checkerboard(config=[4,6], fname=joinpath(Base.homedir(
         return calibrate_video_checkerboard.(Ref(config), flist, Ref(res_fol); numskipframe=numskipframe, save_postfix=save_postfix)
     end
     if isnothing(numskipframe) 
-        numskipframe=round(Int,VideoIO.get_fps(fname))
+        numskipframe=round(Int,get_fps(fname))
     end
 
     ii, cl, fl= cal_imgsVideo(fname, config; numskipframe=numskipframe)
