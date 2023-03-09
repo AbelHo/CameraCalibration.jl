@@ -26,6 +26,11 @@ using CameraCalibration
 calibrate_video_checkerboard()
 ```
 
+# Test if everything works
+```
+calibrate_video_checkerboard([4,6], joinpath(dirname(dirname(pathof(CameraCalibration))), "test", "Vid_20131219_105014_small_180p.mp4") ; numskipframe=10)
+```
+
 ## Other Details
 ### Example Instructions
 [docs/src/example.md](docs/src/example.md)
