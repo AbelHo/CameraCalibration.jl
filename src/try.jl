@@ -202,7 +202,7 @@ function cal_imgsVideo(vidfname, config=[4,5];
 end
 
 
-function display_corners!(img, corners_list; dot_size=reduce(*,size(img))/300_000 )
+function display_corners!(img, corners_list; dot_size=reduce(*,size(img))/300_000>2 ? reduce(*,size(img))/300_000 : 2 )
     len_cl = length(corners_list)
     for j in 1:len_cl
         corner = corners_list[j]
@@ -400,6 +400,7 @@ function calibrate_video_checkerboard(config=[4,6], fname=joinpath(Base.homedir(
     # calib_params = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014.jld2")
 
     nearest_indices_list, nearest_val_list, frame_good, img_new = select_good_corners(calib_params, fname)
+    save(joinpath(res_fol, split(splitext(fname)[1],'/')[end]*"$(save_postfix)_selectedgood.jpg"), img_new)
     vid_frame2img(calib_params["fname"], frame_good, save_imgCorners__save_img!, (joinpath(res_fol,splitext(basename(fname))[1]*save_postfix), calib_params, nearest_indices_list))
 
     #vid_frame2img(calib_params["fname"], frame_good, save_imgCorners!, ("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014$save_postfix", calib_params, nearest_indices_list))
