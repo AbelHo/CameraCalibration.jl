@@ -24,5 +24,5 @@ calibrate_video_checkerboard([4,6]);
 
 # Test if everything works
 ```
-calibrate_video_checkerboard([4,6], joinpath(dirname(dirname(pathof(CameraCalibration))), "test", "Vid_20131219_105014_small_180p.mp4") )
+calibrate_video_checkerboard([4,6], joinpath(dirname(dirname(pathof(CameraCalibration))), "test", "Vid_20131219_105014_small_180p.mp4") ; numskipframe=10)
 ```
