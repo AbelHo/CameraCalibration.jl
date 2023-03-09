@@ -21,7 +21,13 @@ Pkg.add(url="https://github.com/AbelHo/CameraCalibration.jl")
 ```
 using CameraCalibration
 ```
-4. This command will automatically search for that folder and process all the videos in it
+1. This command will automatically search for that folder and process all the videos in it
 ```
 calibrate_video_checkerboard()
 ```
+
+## Other Details
+### Example Instructions
+[docs/src/example.md](docs/src/example.md)
+### Example Video
+[test/Vid_20131219_105014_small_180p.mp4](test/Vid_20131219_105014_small_180p.mp4?raw=true)
