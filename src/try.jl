@@ -1,5 +1,5 @@
-using Pkg
-Pkg.activate("/Users/abel/Documents/Github/CameraCalibration.jl")
+# using Pkg
+# Pkg.activate("/Users/abel/Documents/Github/CameraCalibration.jl")
 using Printf
 using OpenCV, CxxWrap
 cv = OpenCV
