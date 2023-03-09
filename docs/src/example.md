@@ -26,3 +26,9 @@ calibrate_video_checkerboard([4,6]);
 ```
 calibrate_video_checkerboard([4,6], joinpath(dirname(dirname(pathof(CameraCalibration))), "test", "Vid_20131219_105014_small_180p.mp4") ; numskipframe=10)
 ```
+
+# Example output of checkerboard detection
+[/example_results/Vid_20131219_105014_small_180p_s10](/example_results/Vid_20131219_105014_small_180p_s10)
+
+# Example of checkboard detected without drawing overlay
+[/example_results/Vid_20131219_105014_small_180p_s10_raw](/example_results/Vid_20131219_105014_small_180p_s10_raw)
