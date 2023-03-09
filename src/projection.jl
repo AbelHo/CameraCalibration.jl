@@ -2,6 +2,8 @@ using ImageProjectiveGeometry
 using JLD2
 using LinearAlgebra
 
+export get_cam_fov_fromparam
+
 function Camera(camera_params)
     Camera(
         fx  = camera_params["mtx"][1,1],
@@ -24,13 +26,13 @@ vect_angled(a,b) = acosd(clamp(a⋅b/(norm(a)*norm(b)), -1, 1))
 
 # sph2cart(r, θ, ϕ) = r. [; ; ] 
 
-# function test()
-    camera_params = load("/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_s30.h5")
+function get_cam_fov_fromparam(fname)
+    camera_params = load(fname) #"/Users/abel/Documents/data_res/aspod/cam_calib/aspod2/Vid_20131219_105014_s30.h5")
     cam = Camera(camera_params)
 
     horizontal_angle = vect_angled( imagept2ray(cam, cam.rows/2, 1), imagept2ray(cam, cam.rows/2, cam.cols) ) # 62.61721188568244
     vertical_angle = vect_angled( imagept2ray(cam, 1, cam.cols/2), imagept2ray(cam, cam.rows, cam.cols/2) ) # 35.793211268714096
     diagonal_angle = vect_angled( imagept2ray(cam, 1, 1), imagept2ray(cam, cam.rows, cam.cols)) # 71.6855447884958
 
-    
-# end
+    return (;horizontal_angle, vertical_angle, diagonal_angle)    
+end

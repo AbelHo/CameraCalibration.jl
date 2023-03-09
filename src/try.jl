@@ -5,6 +5,8 @@ using OpenCV, CxxWrap
 cv = OpenCV
 using JLD2
 
+export cal_imgsfol, cal_imgsVideo
+
 function extend_dims(A,which_dim)
     s = [size(A)...]
     insert!(s,which_dim,1)
