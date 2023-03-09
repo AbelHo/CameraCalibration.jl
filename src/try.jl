@@ -97,16 +97,16 @@ function cal_imgsVideo(vidfname, config=[4,5];
     config = cv.Size(Int32(config[1]),Int32(config[2]))
     # dot_size = 25
 
-    @info "counting total frames..."
     # totalframe = counttotalframes(vid)
     totalframe = missing
     try
-        totalframe = readchomp(`ffprobe -v error -select_streams v:0 -count_packets -show_entries stream=nb_read_packets -of csv=p=0 $vidfname`)
+        totalframe = VideoIO.FFMPEG.exe(`-v error -select_streams v:0 -count_packets -show_entries stream=nb_read_packets -of csv=p=0 $vidfname`, command = VideoIO.FFMPEG.ffprobe, collect = true)[1]#readchomp(`ffprobe -v error -select_streams v:0 -count_packets -show_entries stream=nb_read_packets -of csv=p=0 $vidfname`)
         @info "Total Frame: $totalframe"
         totalframe = parse(Int, totalframe)
     catch err
         try 
-            @error "Couldn't detect fps fast, ffmmpeg not in path, revert to using julia's VideoIO to find fps(slower)"
+            @error "Couldn't count total frame fast, ffmmpeg not in path, revert to using julia's VideoIO to find fps(slower)"
+            @info "counting total frames..."
             totalframe = counttotalframes(vid)
         catch err
             totalframe = missing
@@ -119,12 +119,13 @@ function cal_imgsVideo(vidfname, config=[4,5];
 
     fps = missing
     try 
-        fps = split(readchomp(`ffprobe -v 0 -of compact=p=0 -select_streams 0 -show_entries stream=r_frame_rate $vidfname`), '=')[2] #`ffmpeg -i $vidfname 2>&1 | sed -n "s/.*, \(.*\) fp.*/\1/p"`)
-        try 
-            fps = parse(Float64,fps)
-        catch err
-            fps = round(reduce(/, parse.(Float64, split(fps,'/')) ), digits=3)
-        end
+        fps = Float64(get_fps(vidfname))
+        # fps = split(readchomp(`ffprobe -v 0 -of compact=p=0 -select_streams 0 -show_entries stream=r_frame_rate $vidfname`), '=')[2] #`ffmpeg -i $vidfname 2>&1 | sed -n "s/.*, \(.*\) fp.*/\1/p"`)
+        # try 
+        #     fps = parse(Float64,fps)
+        # catch err
+        #     fps = round(reduce(/, parse.(Float64, split(fps,'/')) ), digits=3)
+        # end
         
         @info "fps: " * string(fps)
     catch err
