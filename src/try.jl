@@ -378,6 +378,7 @@ function calibrate_video_checkerboard(config=[4,6], fname=joinpath(Base.homedir(
     end
     if isnothing(numskipframe) 
         numskipframe=round(Int,get_fps(fname))
+        save_postfix = "_s$numskipframe"
     end
 
     ii, cl, fl= cal_imgsVideo(fname, config; numskipframe=numskipframe)
