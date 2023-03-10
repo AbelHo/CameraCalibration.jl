@@ -69,6 +69,12 @@ calibrate_video_checkerboard()
 ```
 calibrate_video_checkerboard([4,6]);
 ```
+8. After processing the video it will output the following to show you how well you have covered the checkerboard over the entire image pixel:  
+![coverage results](example_results/Vid_20131219_105014_small_180p_s10.jpg)
+
+9. This will show you the selected good images and the checkerboard coverage:  
+![selected coverage](example_results/Vid_20131219_105014_small_180p_s10_selectedgood.jpg)
+
 # Example result of checkerboard detection:
 The calibration will select the best images required as shown below and show a yellow dot on the detected checkerboard intersection  
 [example_results/Vid_20131219_105014_small_180p_s10](example_results/Vid_20131219_105014_small_180p_s10)  
