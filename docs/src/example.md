@@ -12,6 +12,9 @@
   <img src="example_results/Vid_20131219_105014_small_180p_s10_raw/image-00000016.png" width="100" />
 </p>
 
+7. The goal is to have the checkerboard cover all the pixels in the video frame image with all the different position, each color shows one set of checkerboard:  
+![coverage results](example_results/Vid_20131219_105014_small_180p_s10.jpg)
+
 5. Example Video:  
 [Example Checkerboard Video](../../test/Vid_20131219_105014_small_180p.mp4?raw=true)
 
