@@ -5,6 +5,7 @@ using OpenCV, CxxWrap
 cv = OpenCV
 using JLD2
 using VideoIO, Images, ImageDraw
+include("media_info.jl")
 
 export cal_imgsfol, cal_imgsVideo, calibrate_video_checkerboard
 
@@ -15,28 +16,28 @@ function extend_dims(A,which_dim)
 end
 
 ## Extra
-function get_fps(file::AbstractString, streamno::Integer = 0)
-    streamno >= 0 || throw(ArgumentError("streamno must be non-negative"))
-    fps_strs = VideoIO.FFMPEG.exe(
-        `-v 0 -of compact=p=0 -select_streams v:0 -show_entries stream=r_frame_rate $file`,
-        command = VideoIO.FFMPEG.ffprobe,
-        collect = true,
-    )
-	@debug fps_strs
-	try
-		fps = split(fps_strs[1], '=')[2]
-		if occursin("No such file or directory", fps)
-			error("Could not find file $file")
-		elseif occursin("N/A", fps)
-			return nothing
-		end
-		return reduce(//, parse.(Int, split(fps,'/')) )
-		# return round(reduce(/, parse.(Float64, split(fps,'/')) ), digits=3)
-	catch err
-		@debug(err)
-		return NaN
-	end
-end
+# function get_fps(file::AbstractString, streamno::Integer = 0)
+#     streamno >= 0 || throw(ArgumentError("streamno must be non-negative"))
+#     fps_strs = VideoIO.FFMPEG.exe(
+#         `-v 0 -of compact=p=0 -select_streams v:0 -show_entries stream=r_frame_rate $file`,
+#         command = VideoIO.FFMPEG.ffprobe,
+#         collect = true,
+#     )
+# 	@debug fps_strs
+# 	try
+# 		fps = split(fps_strs[1], '=')[2]
+# 		if occursin("No such file or directory", fps)
+# 			error("Could not find file $file")
+# 		elseif occursin("N/A", fps)
+# 			return nothing
+# 		end
+# 		return reduce(//, parse.(Int, split(fps,'/')) )
+# 		# return round(reduce(/, parse.(Float64, split(fps,'/')) ), digits=3)
+# 	catch err
+# 		@debug(err)
+# 		return NaN
+# 	end
+# end
 #####
 
 mat_jl2mat_cv(x) = cv.Mat{Float32}(Any, extend_dims(x, 2) )
@@ -83,7 +84,7 @@ end
 
 # using VideoIO, Images, ImageDraw
 # ii, cl, fl= cal_imgsVideo(fname, [4,6]; numskipframe=30)
-function cal_imgsVideo(vid, config=[4,5];
+function cal_imgsVideo(vid_vidfname, config=[4,5];
     resImageFilepath=false, res_postfix="_res_"*replace( string(config), '['=>'(', ']'=>')', ','=>'.' ),
     numskipframe=0,
     createResultFolder=false
@@ -92,46 +93,50 @@ function cal_imgsVideo(vid, config=[4,5];
     corner_winsize = cv.Size(Int32(11),Int32(11))
     corner_zerozone = cv.Size(Int32(-1),Int32(-1))
 
+    vid, vidfname = vid_vidfname
+
     # vid = VideoIO.openvideo(vidfname) #"/Users/abel/Documents/aspod/data/2022-05-13_nus-pool/0015/Vid_20131219_101550.mkv")
 
     config = cv.Size(Int32(config[1]),Int32(config[2]))
     # dot_size = 25
 
     # totalframe = counttotalframes(vid)
-    totalframe = missing
-    try
-        totalframe = VideoIO.FFMPEG.exe(`-v error -select_streams v:0 -count_packets -show_entries stream=nb_read_packets -of csv=p=0 $vidfname`, command = VideoIO.FFMPEG.ffprobe, collect = true)[1]#readchomp(`ffprobe -v error -select_streams v:0 -count_packets -show_entries stream=nb_read_packets -of csv=p=0 $vidfname`)
-        @info "Total Frame: $totalframe"
-        totalframe = parse(Int, totalframe)
-    catch err
-        try 
-            @error "Couldn't count total frame fast, ffmmpeg not in path, revert to using julia's VideoIO to find fps(slower)"
-            @info "counting total frames..."
-            totalframe = counttotalframes(vid)
-        catch err
-            totalframe = missing
-            @error "[ERR]unable to get total number of frame"
-        end
+    # totalframe = missing
+    totalframe = get_number_frames(vidfname)
+    # try
+    #     totalframe = VideoIO.FFMPEG.exe(`-v error -select_streams v:0 -count_packets -show_entries stream=nb_read_packets -of csv=p=0 $vidfname`, command = VideoIO.FFMPEG.ffprobe, collect = true)[1]#readchomp(`ffprobe -v error -select_streams v:0 -count_packets -show_entries stream=nb_read_packets -of csv=p=0 $vidfname`)
+    #     @info "Total Frame: $totalframe"
+    #     totalframe = parse(Int, totalframe)
+    # catch err
+    #     try 
+    #         @error "Couldn't count total frame fast, ffmmpeg not in path, revert to using julia's VideoIO to find fps(slower)"
+    #         @info "counting total frames..."
+    #         totalframe = counttotalframes(vid)
+    #     catch err
+    #         totalframe = missing
+    #         @error "[ERR]unable to get total number of frame"
+    #     end
 
-        # totalframe = missing
-        # @error "[ERR]unable to get total number of frame"
-    end
+    #     # totalframe = missing
+    #     # @error "[ERR]unable to get total number of frame"
+    # end
 
-    fps = missing
-    try 
-        fps = Float64(get_fps(vidfname))
-        # fps = split(readchomp(`ffprobe -v 0 -of compact=p=0 -select_streams 0 -show_entries stream=r_frame_rate $vidfname`), '=')[2] #`ffmpeg -i $vidfname 2>&1 | sed -n "s/.*, \(.*\) fp.*/\1/p"`)
-        # try 
-        #     fps = parse(Float64,fps)
-        # catch err
-        #     fps = round(reduce(/, parse.(Float64, split(fps,'/')) ), digits=3)
-        # end
+    fps = get_fps(vidfname)
+    # fps = missing
+    # try 
+    #     fps = Float64(get_fps(vidfname))
+    #     # fps = split(readchomp(`ffprobe -v 0 -of compact=p=0 -select_streams 0 -show_entries stream=r_frame_rate $vidfname`), '=')[2] #`ffmpeg -i $vidfname 2>&1 | sed -n "s/.*, \(.*\) fp.*/\1/p"`)
+    #     # try 
+    #     #     fps = parse(Float64,fps)
+    #     # catch err
+    #     #     fps = round(reduce(/, parse.(Float64, split(fps,'/')) ), digits=3)
+    #     # end
         
-        @info "fps: " * string(fps)
-    catch err
-        fps = missing
-        @error "[ERR]unable to get fps"
-    end
+    #     @info "fps: " * string(fps)
+    # catch err
+    #     fps = missing
+    #     @error "[ERR]unable to get fps"
+    # end
 
     corners_list = []; frame_list = []
     counts=1
