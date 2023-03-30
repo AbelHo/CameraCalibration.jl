@@ -209,11 +209,22 @@ function cal_imgsVideo(vidfname::String, config=[4,5];
 
     vid = VideoIO.openvideo(vidfname)
 
-    cal_imgsVideo(vid, config;
-    resImageFilepath=resImageFilepath, res_postfix=res_postfix,
-    numskipframe=numskipframe,
-    createResultFolder=createResultFolder
-    )
+    try
+        cal_imgsVideo(vid, config;
+        resImageFilepath=resImageFilepath, res_postfix=res_postfix,
+        numskipframe=numskipframe,
+        createResultFolder=createResultFolder
+        )
+    catch err
+        @warn "Failed opening video normally, reseeking to try again..."
+        seek(vid,1)
+        seekstart(vid)
+        cal_imgsVideo(vid, config;
+        resImageFilepath=resImageFilepath, res_postfix=res_postfix,
+        numskipframe=numskipframe,
+        createResultFolder=createResultFolder
+        )
+    end
 
 end
 
