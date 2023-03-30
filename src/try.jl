@@ -83,7 +83,7 @@ end
 
 # using VideoIO, Images, ImageDraw
 # ii, cl, fl= cal_imgsVideo(fname, [4,6]; numskipframe=30)
-function cal_imgsVideo(vidfname, config=[4,5];
+function cal_imgsVideo(vid, config=[4,5];
     resImageFilepath=false, res_postfix="_res_"*replace( string(config), '['=>'(', ']'=>')', ','=>'.' ),
     numskipframe=0,
     createResultFolder=false
@@ -92,7 +92,7 @@ function cal_imgsVideo(vidfname, config=[4,5];
     corner_winsize = cv.Size(Int32(11),Int32(11))
     corner_zerozone = cv.Size(Int32(-1),Int32(-1))
 
-    vid = VideoIO.openvideo(vidfname) #"/Users/abel/Documents/aspod/data/2022-05-13_nus-pool/0015/Vid_20131219_101550.mkv")
+    # vid = VideoIO.openvideo(vidfname) #"/Users/abel/Documents/aspod/data/2022-05-13_nus-pool/0015/Vid_20131219_101550.mkv")
 
     config = cv.Size(Int32(config[1]),Int32(config[2]))
     # dot_size = 25
@@ -199,6 +199,22 @@ function cal_imgsVideo(vidfname, config=[4,5];
     # end
 
     return img, corners_list, frame_list
+end
+
+function cal_imgsVideo(vidfname::String, config=[4,5];
+    resImageFilepath=false, res_postfix="_res_"*replace( string(config), '['=>'(', ']'=>')', ','=>'.' ),
+    numskipframe=0,
+    createResultFolder=false
+    )
+
+    vid = VideoIO.openvideo(vidfname)
+
+    cal_imgsVideo(vid, config;
+    resImageFilepath=resImageFilepath, res_postfix=res_postfix,
+    numskipframe=numskipframe,
+    createResultFolder=createResultFolder
+    )
+
 end
 
 
