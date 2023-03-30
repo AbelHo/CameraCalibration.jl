@@ -294,15 +294,17 @@ end
 
 function select_good_corners(calib_params, fname::String)
     vid = VideoIO.openvideo(fname)
-    try
-        img = read(vid)
-    catch err
-        @warn "Failed opening video normally, reseeking to try again..."
-        seek(vid,1)
-        seekstart(vid)
-        img = read(vid)
+    let img
+        try
+            img = read(vid)
+        catch err
+            @warn "Failed opening video normally, reseeking to try again..."
+            seek(vid,1)
+            seekstart(vid)
+            img = read(vid)
+        end
+        select_good_corners(calib_params, img::PermutedDimsArray)
     end
-    select_good_corners(calib_params, img::PermutedDimsArray)
 end
 
 
