@@ -288,9 +288,20 @@ function select_good_corners(calib_fname::String, fname::String)
     select_good_corners(calib_params, img::PermutedDimsArray)
 end
 
+function select_good_corners(calib_params, vid)
+    select_good_corners(calib_params, img::PermutedDimsArray)
+end
+
 function select_good_corners(calib_params, fname::String)
     vid = VideoIO.openvideo(fname)
-    img = read(vid)
+    try
+        img = read(vid)
+    catch err
+        @warn "Failed opening video normally, reseeking to try again..."
+        seek(vid,1)
+        seekstart(vid)
+        img = read(vid)
+    end
     select_good_corners(calib_params, img::PermutedDimsArray)
 end
 
@@ -354,7 +365,14 @@ function vid_frame2img(vidfname, framelist, func, args=nothing)
     output_list = []
     for frame_ind in framelist
         if frame_ind == 1
-            img = read(vid)
+            try
+                img = read(vid)
+            catch err
+                @warn "Failed opening video normally, reseeking to try again..."
+                seek(vid,1)
+                seekstart(vid)
+                img = read(vid)
+            end
         else
             # @debug frame_ind-index
             skipframes(vid, frame_ind-index)
