@@ -5,6 +5,7 @@ version = "0.0.1"
 
 [deps]
 CxxWrap = "1f15a43c-97ca-5a2a-ae31-89f07a497df4"
+FFMPEG = "c87230d0-a227-11e9-1b43-d7ebe4e7570a"
 ImageDraw = "4381153b-2b60-58ae-a1ba-fd683676385f"
 ImageProjectiveGeometry = "b9d14576-938f-5430-9d4c-b7d7de1409d6"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
