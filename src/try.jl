@@ -224,7 +224,7 @@ function cal_imgsVideo(vidfname::String, config=[4,5];
         @warn "Failed opening video normally, reseeking to try again..."
         seek(vid,1)
         seekstart(vid)
-        cal_imgsVideo(vid, config;
+        cal_imgsVideo( (vid,vidfname), config;
         resImageFilepath=resImageFilepath, res_postfix=res_postfix,
         numskipframe=numskipframe,
         createResultFolder=createResultFolder
