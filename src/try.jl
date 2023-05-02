@@ -353,7 +353,12 @@ function select_good_corners(calib_params, imsize::Tuple)
     nearest_indices_list = unique(nearest_indices_list) |> sort
     # img_new = display_corners(ii, cls[nearest_indices_list])
 
-    frame_good = calib_params["file_list"][nearest_indices_list]
+    frame_good = []
+    if !isempty(nearest_indices_list)
+        frame_good = calib_params["file_list"][nearest_indices_list]
+    else
+        @info "No good calibration checkerboard image found! :("
+    end
 
     nearest_indices_list, nearest_val_list, frame_good
 
