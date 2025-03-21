@@ -20,7 +20,7 @@ def calibrate_folder(dirname, config=(4,6), plotImage=False):
         img = cv.imread(fname)
         gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         # Find the chess board corners
-        ret, corners = cv.findChessboardCorners(gray, (4,6), None)
+        ret, corners = cv.findChessboardCorners(gray, config, None)
         # If found, add object points, image points (after refining them)
         if ret == True:
             objpoints.append(objp)
